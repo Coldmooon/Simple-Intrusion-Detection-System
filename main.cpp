@@ -2,12 +2,41 @@
 #include <iostream>
 #include <chrono>
 #include <csignal>
+#include <sstream>
+#include <iomanip>
+
 
 volatile std::sig_atomic_t signalReceived = 0;
 
 void signalHandler(int signal) {
     signalReceived = 1;
 }
+
+std::string getCurrentDateTime() {
+    auto now = std::chrono::system_clock::now();
+    auto in_time_t = std::chrono::system_clock::to_time_t(now);
+
+    std::stringstream ss;
+    // Format: YYYY-MM-DD HH:MM
+    ss << std::put_time(std::localtime(&in_time_t), "%Y-%m-%d %H:%M"); 
+    // Format: YYYY-MM-DD HH:MM:SS
+    // ss << std::put_time(std::localtime(&in_time_t), "%Y-%m-%d %X");
+    return ss.str();
+}
+
+
+void addDateTimeToFrame(cv::Mat &frame) {
+    std::string dateTime = getCurrentDateTime();
+    int fontFace = cv::FONT_HERSHEY_SIMPLEX;
+    double fontScale = 1.5;
+    int thickness = 3;
+    cv::Point textOrg(frame.cols - 1200, 50); // Adjust based on frame size or desired location
+    cv::Scalar textColor(0, 255, 255); // Yellow text color
+
+    std::string description = "Any words you want to add..." + dateTime;
+    cv::putText(frame, description, textOrg, fontFace, fontScale, textColor, thickness);
+}
+
 
 int main(int, char**) {
     // Register signal handler
@@ -69,6 +98,7 @@ int main(int, char**) {
         start = now; // Reset start time for next loop iteration
 
         if (saveVideo) {
+            addDateTimeToFrame(frame);
             writer.write(frame);
             countdown -= elapsed;
             std::cout << "elapsed: " << elapsed << std::endl;
