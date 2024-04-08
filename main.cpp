@@ -37,6 +37,10 @@ void addDateTimeToFrame(cv::Mat &frame) {
     cv::putText(frame, description, textOrg, fontFace, fontScale, textColor, thickness);
 }
 
+bool decisionHardThreshold(double totalKineticEnergy, double kineticEnergyThreshold) {
+
+    return totalKineticEnergy > kineticEnergyThreshold;
+}
 
 int main(int, char**) {
     // Register signal handler
@@ -79,7 +83,7 @@ int main(int, char**) {
         double totalKineticEnergy = std::sqrt(cv::sum(kineticEnergy)[0]);
 
         std::cout << totalKineticEnergy  << std::endl;
-        if (totalKineticEnergy > kineticEnergyThreshold) {
+        if (decisionHardThreshold(totalKineticEnergy, kineticEnergyThreshold)) {
             if (!saveVideo) {
                 std::string filename = "intrusion_" + std::to_string(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())) + ".avi";
                 writer.open(filename, cv::VideoWriter::fourcc('M','J','P','G'), 10, frame.size(), true);
