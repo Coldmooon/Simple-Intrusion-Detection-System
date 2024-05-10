@@ -42,7 +42,15 @@ bool decisionHardThreshold(double totalKineticEnergy, double kineticEnergyThresh
     return totalKineticEnergy > kineticEnergyThreshold;
 }
 
-int main(int, char**) {
+bool decisionMovingAvgThres(double totalKineticEnergy, double * energyOverTime, int length ) {  
+    // to do
+    return 0
+}
+
+
+
+
+int main(int argc, char** argv) {
     // Register signal handler
     std::signal(SIGINT, signalHandler);
 
@@ -51,6 +59,22 @@ int main(int, char**) {
         std::cerr << "Cannot open the camera" << std::endl;
         return -1;
     }
+
+    // Initialize saveDirectory as an empty string
+    std::string saveDirectory = "";
+
+    // If a directory is provided as an argument, use it with a trailing slash
+    if (argc == 2) {
+        saveDirectory = argv[1];
+        if (saveDirectory.back() != '/') {
+            saveDirectory += '/';  // Ensure the directory path ends with a slash
+        }
+    }
+    else if (argc > 2) {
+        std::cerr << "Usage: " << argv[0] << " [save_directory]" << std::endl;
+        return -1;
+    }
+    
 
     cv::Mat prevGray, frame, gray, flow, flowParts[2], magnitude, kineticEnergy;
     cap >> frame; // get the first frame to initialize the matrices
@@ -82,17 +106,18 @@ int main(int, char**) {
         cv::pow(magnitude, 2, kineticEnergy);
         double totalKineticEnergy = std::sqrt(cv::sum(kineticEnergy)[0]);
 
-        std::cout << totalKineticEnergy  << std::endl;
         if (decisionHardThreshold(totalKineticEnergy, kineticEnergyThreshold)) {
             if (!saveVideo) {
-                std::string filename = "intrusion_" + std::to_string(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())) + ".avi";
+                std::string filename = saveDirectory + "intrusion_" + std::to_string(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())) + ".avi";
+
                 writer.open(filename, cv::VideoWriter::fourcc('M','J','P','G'), 10, frame.size(), true);
                 if (!writer.isOpened()) {
-                    std::cerr << "Could not open the output video file for write\n";
-                    return -1;
+                    std::cerr << "Could not open the output video file for write at " << filename << std::endl;
+                    // return -1;
+                    continue; // Skip trying to save video and continue the loop
                 }
                 saveVideo = true;
-                std::cout << "Intrusion detected: Starting recording." << std::endl;
+                std::cout << "Intrusion detected: Starting recording at " << filename << std::endl;
             }
             countdown = recordTime;
         }
@@ -105,8 +130,6 @@ int main(int, char**) {
             addDateTimeToFrame(frame);
             writer.write(frame);
             countdown -= elapsed;
-            std::cout << "elapsed: " << elapsed << std::endl;
-            std::cout << "countdown: " << countdown << std::endl;
 
             if (countdown <= 0) {
                 saveVideo = false;
